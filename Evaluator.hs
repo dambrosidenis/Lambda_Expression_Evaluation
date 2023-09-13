@@ -1,44 +1,56 @@
+{-# LANGUAGE InstanceSigs #-}
 module Evaluator where
 
-import Data.List ( (\\) )
- 
-data Term =
-    Var String
-    | Abs String Term
-    | App Term Term
+import Data.List ( (\\), elemIndex, intercalate )
+import AlexScanner (Token(Term))
+
+data SyntaxTerm = SyntaxVar String
+    | SyntaxAbs String SyntaxTerm
+    | SyntaxApp SyntaxTerm SyntaxTerm
     | Empty
     deriving (Eq, Show)
 
-eval :: Term -> Term
-eval (App (Abs x t12) v2@(Abs _ _)) = subst x t12 v2 -- E-AppAbs
-eval (App v1@(Abs _ _) t2)          = let t2' = eval t2 in App v1 t2' -- E-App2
-eval (App t1 t2)                    = let t1' = eval t1 in App t1' t2 -- E-App1
-eval _ = error "No rule applies"
+data Term = Var String | Abs (Term -> Term) | App Term Term
 
-subst :: String -> Term -> Term -> Term
-subst x (Var v) newVal
-    | x == v    = newVal
-    | otherwise = Var v
-subst x (Abs y t1) newVal
-    | x == y                                  = Abs y t1
-    | x /= y && (y `notElem` freeVars newVal) = Abs y (subst x t1 newVal)
-    | otherwise                               = error $ "Cannot substitute '" ++ show x ++ "' in term '" ++ show (Abs y t1) ++ "'"
-subst x (App t1 t2) newVal = App (subst x t1 newVal) (subst x t2 newVal)
-subst _ _ _ = error "Empty detected"
+instance Show Term where
+    show :: Term -> String
+    show (Var x) = "[VAR]" ++ x
+    show (Abs f) = "[ABS]"
+    show (App t1 t2) = "[APP] (" ++ show t1 ++ " " ++ show t2 ++ ")"
 
-freeVars :: Term -> [String]
-freeVars (Var x) = [x]
-freeVars (Abs x t1) = removeDuplicates (freeVars t1) \\ [x] where
-    removeDuplicates :: [String] -> [String]
-    removeDuplicates [] = []
-    removeDuplicates (x:xs)
-        | elem x xs     = removeDuplicates xs
-        | otherwise     = x : removeDuplicates xs
-freeVars (App t1 t2) = freeVars t1 ++ freeVars t2
-freeVars _ = error "Empty detected"
+toLambda :: SyntaxTerm -> Term
+toLambda = toLambdaRec [] where
+    toLambdaRec :: [String] -> SyntaxTerm -> Term
+    toLambdaRec vars (SyntaxVar x) = case elemIndex x vars of
+        Just n -> nthProjection n (length vars)
+        Nothing -> naryConstant (length vars) x
+    toLambdaRec vars (SyntaxAbs x t) = toLambdaRec (vars ++ [x]) t
+    toLambdaRec _ Empty = error "Empty detected"
+    toLambdaRec vars (SyntaxApp t1 t2) = case t1 of
+        t@(SyntaxAbs _ _) -> let (Abs f) = toLambdaRec vars t in f (toLambdaRec vars t2) -- OK
+        t@(SyntaxVar x) -> case elemIndex x vars of
+            Just n -> nthApplication n (toLambdaRec vars t2) (length vars) -- DEVI PASSARE L'ALBERO SINTATTICO AL POSTO DI n!!
+            Nothing -> App (Var x) (toLambdaRec vars t2) -- OK
+        t@(SyntaxApp t2 t3) -> toLambdaRec vars t
+        Empty -> error "Empty detected"
 
-getPrintable :: Term -> String
-getPrintable (Var x) = x
-getPrintable (Abs x term) = "(λ" ++ x ++ "." ++ getPrintable term ++ ")"
-getPrintable (App x y) = "(" ++ getPrintable x ++ ") (" ++ getPrintable y ++ ")"
-getPrintable _ = error "Empty detected"
+nthProjection :: Int -> Int -> Term
+nthProjection n arity = nthProjectionRec n arity [] where
+    nthProjectionRec :: Int -> Int -> [Term] -> Term
+    nthProjectionRec n 0 _ = error "nth-projection: cannot build a 0-ary abstraction"
+    nthProjectionRec n 1 values = Abs (\x -> (values++[x]) !! n)
+    nthProjectionRec n i values = Abs (\x -> nthProjectionRec n (i-1) (values++[x]))
+
+naryConstant :: Int -> String -> Term
+naryConstant 0 value = Var value 
+naryConstant 1 value = Abs (const (Var value))
+naryConstant i value = Abs (const (naryConstant (i-1) value))
+
+nthApplication :: Int -> Term -> Int -> Term
+nthApplication n term arity = nthApplicationRec n term arity [] where
+    nthApplicationRec :: Int -> Term -> Int -> [Term] -> Term
+    nthApplicationRec n term 1 values = Abs (\ x -> case (values++[x]) !! n of
+        Abs f -> f term
+        t@(Var v) -> App t term
+        _ -> error "Illegal application")
+    nthApplicationRec n term i values = Abs (\ x -> nthApplicationRec n term (i-1) (values ++ [x]))
