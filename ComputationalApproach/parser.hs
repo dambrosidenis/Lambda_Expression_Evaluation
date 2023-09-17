@@ -229,10 +229,10 @@ parseError e = error (show e ++ "Errore durante il parsing")
 
 main :: IO ()
 main = do
-    s <- readFile "prova.txt"
+    s <- readFile "../prova.txt"
     let tokens = alexScanTokens s ++ [ NewLine ]
     let parsedTerms = filter (/= Empty) (reverse (parse tokens))
-    mapM_ (print) parsedTerms
+    --mapM_ (print) parsedTerms
     let evaluatedTerms = map eval parsedTerms
     mapM_ (print) evaluatedTerms
 {-# LINE 1 "templates/GenericTemplate.hs" #-}
