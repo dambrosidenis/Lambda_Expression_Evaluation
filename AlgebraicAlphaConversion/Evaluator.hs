@@ -18,7 +18,7 @@ instance Show Term where
 showTerm :: Term -> String
 showTerm (Var x) = x
 showTerm (Abs x term) = "(λ" ++ x ++ "." ++ showTerm term ++ ")"
-showTerm (App x y) = "(" ++ showTerm x ++ ") (" ++ showTerm y ++ ")"
+showTerm (App x y) = "(" ++ showTerm x ++ " " ++ showTerm y ++ ")"
 showTerm _ = error "Empty detected"
 
 variableSet :: [String]
@@ -31,17 +31,13 @@ firstNameAvailable = firstNameAvailableRec 0 where
         | otherwise = variableSet !! n
 
 eval :: Term -> Term
-eval (App (Abs x t1) t2) = sub x t1 t2
-eval (App t1 t2) = let t1' = eval t1 in App t1' t2
+eval (App (Abs x t) t1) = let t1' = eval t1 in eval (sub x t t1')
+eval (App t1 t2) = case eval t1 of
+    a@(Abs x t1) -> eval (App a t2)
+    t -> App t (eval t2)
+eval (Abs x t) = Abs x (eval t)
 eval Empty = error "Empty detected"
 eval t = t
-
-eval' :: Term -> Term
-eval' (App (Abs x t) v@(Abs _ _)) = sub x t v
-eval' (App v1@(Abs _ _) t2) = let t2' = eval t2 in App v1 t2'
-eval' (App t1 t2) = let t1' = eval t1 in App t1' t2
-eval' Empty = error "Empty detected"
-eval' t = t
 
 sub :: String -> Term -> Term -> Term
 sub x v@(Var y) newVal
