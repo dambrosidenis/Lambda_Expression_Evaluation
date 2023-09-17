@@ -1,1 +1,3 @@
-(λ x . x x) a
+(λ y . y) b
+(λ x . (λ y . (λ z . x))) a
+(λx. λy. z x (λu. u x)) (λx. w x)

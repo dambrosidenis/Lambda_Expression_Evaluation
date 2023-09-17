@@ -146,7 +146,7 @@ happyReduction_4 _ _  = notHappyAtAll
 happyReduce_5 = happySpecReduce_1  6 happyReduction_5
 happyReduction_5 (HappyTerminal (Term happy_var_1))
 	 =  HappyAbsSyn6
-		 (Var happy_var_1
+		 (SyntaxVar happy_var_1
 	)
 happyReduction_5 _  = notHappyAtAll 
 
@@ -166,14 +166,14 @@ happyReduction_7 ((HappyAbsSyn6  happy_var_4) `HappyStk`
 	_ `HappyStk`
 	happyRest)
 	 = HappyAbsSyn6
-		 (Abs happy_var_2 happy_var_4
+		 (SyntaxAbs happy_var_2 happy_var_4
 	) `HappyStk` happyRest
 
 happyReduce_8 = happySpecReduce_2  6 happyReduction_8
 happyReduction_8 (HappyAbsSyn6  happy_var_2)
 	(HappyAbsSyn6  happy_var_1)
 	 =  HappyAbsSyn6
-		 (App happy_var_1 happy_var_2
+		 (SyntaxApp happy_var_1 happy_var_2
 	)
 happyReduction_8 _ _  = notHappyAtAll 
 
@@ -229,12 +229,10 @@ parseError e = error (show e ++ "Errore durante il parsing")
 
 main :: IO ()
 main = do
-    s <- readFile "../prova.txt"
+    s <- readFile "prova.txt"
     let tokens = alexScanTokens s ++ [ NewLine ]
     let parsedTerms = filter (/= Empty) (reverse (parse tokens))
-    --mapM_ (print) parsedTerms
-    let dbTerms = map toDeBruijn parsedTerms
-    --mapM_ (print) dbTerms
+    mapM_ (print) parsedTerms
     let evaluatedTerms = map eval parsedTerms
     mapM_ (print) evaluatedTerms
 {-# LINE 1 "templates/GenericTemplate.hs" #-}

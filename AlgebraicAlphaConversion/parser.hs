@@ -233,8 +233,6 @@ main = do
     let tokens = alexScanTokens s ++ [ NewLine ]
     let parsedTerms = filter (/= Empty) (reverse (parse tokens))
     --mapM_ (print) parsedTerms
-    let dbTerms = map toDeBruijn parsedTerms
-    --mapM_ (print) dbTerms
     let evaluatedTerms = map eval parsedTerms
     mapM_ (print) evaluatedTerms
 {-# LINE 1 "templates/GenericTemplate.hs" #-}

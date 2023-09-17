@@ -40,12 +40,10 @@ parseError e = error (show e ++ "Errore durante il parsing")
 
 main :: IO ()
 main = do
-    s <- readFile "../prova.txt"
+    s <- readFile "prova.txt"
     let tokens = alexScanTokens s ++ [ NewLine ]
     let parsedTerms = filter (/= Empty) (reverse (parse tokens))
     --mapM_ (print) parsedTerms
-    let dbTerms = map toDeBruijn parsedTerms
-    --mapM_ (print) dbTerms
     let evaluatedTerms = map eval parsedTerms
     mapM_ (print) evaluatedTerms
 }
