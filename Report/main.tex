@@ -1,0 +1,96 @@
+\documentclass{article}
+
+% Packages
+\usepackage{amsmath} % For mathematical symbols and equations
+\usepackage{amssymb} % For equation font
+\usepackage{graphicx} % For including images
+\usepackage{cite} % For citations
+\usepackage{natbib} % For formatting citations
+\usepackage{url} % For URLs
+\usepackage{hyperref} % For clickable links
+\usepackage{epigraph} % For quotes
+
+\newtheorem{theorem}{Theorem}
+
+\setlength\epigraphwidth{.6\textwidth}
+\renewcommand{\epigraphflush}{flushright}
+
+% Document information
+\title{Evaluating untyped $\lambda$-expressions in Haskell}
+\author{D'Ambrosi Denis \\ \small \texttt{dambrosi.denis@spes.uniud.it} \\ \small \texttt{147681}}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\end{abstract}
+
+\tableofcontents
+
+\newpage
+
+\section*{Introduction}
+
+\section{Pure $\lambda$-Calculus}
+
+Pure $\lambda$-Calculus, developed by Alonzo Church in the 1930s, is a formal system that plays a pivotal role in the foundation of theoretical computer science. It is a minimalist, yet immensely powerful, mathematical framework for expressing computation using only anonymous functions.
+
+The set of $\lambda$-terms $\Lambda$ is the minimal set that can be constructed inductively according the following rules (that effectively define the syntax of this formalism):
+
+\begin{enumerate}
+    \item If $x$ is a variable, then $x \in \Lambda$
+    \item If $x$ is a variable and $M \in \Lambda$, then $(\lambda x . M)$
+    \item If $M,N \in \Lambda$, then $(M N) \in \Lambda$
+\end{enumerate}
+
+Rule number 2 expresses the possibility of creating \textit{abstractions}. An abstraction is an anonymous function that takes as input a $\lambda$-term (in this case $x$) and returns a $\lambda$-term (not necessarily a variable, in this case $M$) as output. Multiple inputs functions can be constructed via a process called \textit{currying}: since higher-order-functions are allowed within $\lambda$-Calculus, we can transform any $n$-ary function into an abstraction that takes only one input and returns another abstraction as output. The latter will, in turn, consume only one input and produce yet another abstraction, and so on, $n$ times. Evaluating the last function will, eventually, produce the desired output.
+
+Rule number 3, on the other hand, allows for the application abstractions to $\lambda$-terms: performing such operation will yield a new $\lambda$-term according two main reduction operations:
+
+\begin{enumerate}
+    \item \textit{$\alpha$-conversion} aims at renaiming bound variables for avoiding name collisions: $(\lambda x . M) \to (\lambda y . M[x := y])$
+    \item \textit{$\beta$-reduction} actually normalizes $\lambda$-terms by replacing bound variables in the body of the abstraction with the actual parameter: $((\lambda x . M) N) \to M[x := N]$
+\end{enumerate}
+
+Before executing a $\beta$-reduction step, we want to ensure that the actual parameter substituted within an abstraction's body does not appear \textit{free} in it. Formally, provided a $\lambda$-term $t$, the set of its \textit{Free variables} $FV(t)$ can be computed recursively as follows:
+
+\begin{itemize}
+    \item $FV(x) = x$ if $x$ is a variable
+    \item $FV((\lambda x . M)) = FV(M) \setminus x$
+    \item $FV((M N)) = FV(M) \cup FV(N)$
+\end{itemize}
+
+If the input of the application appears free within the abstraction, then we must execute an process of $\alpha$-conversion on the latter to avoid any undesired change of semantics due to name clashing. If we did not take this additional care while substituting, we may inadvertly compute incorrect terms while $\beta$-reducing.
+
+This quick overview of the syntax and semantics of the $\lambda$-Calculus has laid the groundwork for introducing the actual implementations of $\lambda$-expressions evaluators of the upcoming sections. Before continuing, it is worth discussing briefly the reason why is formalism is still relevant, even after all these years. In 1936, Church proved that $\lambda$-Calculus is Turing complete, meaning that it has the computational power equivalent to a universal Turing machine. This critical property establishes $\lambda$-Calculus as a foundational formal system in the study of computation: this results implies that any computable function can be expressed and evaluated within the confines of $\lambda$-Calculus. Such fact underpins its applications not only in theoretical computer science but also in practical domains, where it serves as the basis for functional programming languages and aids in the development of algorithms for various computational tasks.
+
+\section{Evaluating $\lambda$-expressions}
+
+\epigraph{\textit{A monad is a monoid in the cathegory of endofunctors}}{\textit{Unknown}}
+
+\subsection{Lexing $\lambda$-expressions}
+
+\subsection{Parsing $\lambda$-expressions}
+
+\subsection{Evaluating $\lambda$-terms: the algebraic approach}
+
+\subsubsection{Alpha conversion method}
+
+\subsubsection{De Bruijn Indexes method}
+
+\subsection{Evaluating $\lambda$-terms: the computational approach}
+
+\subsection{Performance metrics}
+
+\section{Conclusions}
+
+
+
+% Bibliography
+\clearpage
+\bibliographystyle{alpha} % Choose a bibliography style
+\bibliography{references} % Specify the bibliography file
+
+\end{document}
