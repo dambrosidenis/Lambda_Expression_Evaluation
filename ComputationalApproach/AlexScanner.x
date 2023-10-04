@@ -4,7 +4,6 @@ where
 }
 
 %wrapper "basic"
-$digit = [0-9]
 $letter = [a-zA-Z]
 
 

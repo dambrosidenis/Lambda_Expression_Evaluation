@@ -16,8 +16,7 @@ import Evaluator
     '('     { OpenPar }
     ')'     { ClosedPar }
 
-%left 'λ' '.'
-%right VAR
+%left 'λ' '.' VAR
 
 %%
 
@@ -36,14 +35,13 @@ exp     : VAR                       { Var $1 }
 {
 
 parseError :: [Token] -> a
-parseError e = error (show e ++ "Errore durante il parsing")
+parseError e = error (show e ++ "Error while parsing")
 
 main :: IO ()
 main = do
     s <- readFile "../test.txt"
     let tokens = alexScanTokens s ++ [ NewLine ]
     let parsedTerms = filter (/= Empty) (reverse (parse tokens))
-    --mapM_ (print) parsedTerms
     let evaluatedTerms = map eval parsedTerms
     mapM_ (print) evaluatedTerms
 }

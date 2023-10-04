@@ -1,0 +1,28 @@
+\begin{thebibliography}{Chu36}
+
+\bibitem[Chu36]{church}
+Alonzo Church.
+\newblock An unsolvable problem of elementary number theory.
+\newblock {\em American Journal of Mathematics}, 58:345, 1936.
+
+\bibitem[DJM]{alex}
+Chris Dornan, Isaac Jones, and Simon Marlow.
+\newblock Alex user guide.
+\newblock \url{https://haskell-alex.readthedocs.io/en/latest/about.html}.
+
+\bibitem[GM]{happy}
+Andy Gill and Simon Marlow.
+\newblock Happy documentation.
+\newblock \url{https://haskell-happy.readthedocs.io/en/latest/index.html}.
+
+\bibitem[ML71]{mac}
+Saunders Mac~Lane.
+\newblock {\em Category Theory for the Working Mathematician}.
+\newblock Springer, 1971.
+
+\bibitem[Tur37]{turing}
+Alan~M. Turing.
+\newblock Computability and \textlambda-definability.
+\newblock {\em The Journal of Symbolic Logic}, pages 153--163, 1937.
+
+\end{thebibliography}

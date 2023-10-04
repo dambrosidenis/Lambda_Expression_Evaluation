@@ -2,56 +2,58 @@
 module Evaluator where
 
 import Data.List ( (\\), elemIndex )
-import Control.Monad (replicateM)
+import Control.Monad (replicateM, join)
 import Text.Read (readMaybe)
 
-data SyntaxTerm = SyntaxVar String
-    | SyntaxAbs String SyntaxTerm
-    | SyntaxApp SyntaxTerm SyntaxTerm
+data Term = Var String
+    | Abs String Term
+    | App Term Term
     | Empty
     deriving (Eq)
 
-instance Show SyntaxTerm where
-    show :: SyntaxTerm -> String
-    show (SyntaxVar x) = x
-    show (SyntaxAbs x term) = "(λ" ++ x ++ "." ++ show term ++ ")"
-    show (SyntaxApp x y) = "(" ++ show x ++ " " ++ show y ++ ")"
-    show _ = error "Empty detected"
-
-data Term = Var String | Abs (Term -> Term) | App Term Term
-
 instance Show Term where
     show :: Term -> String
+    show (Var x) = x
+    show (Abs x t) = join ["(λ", x, ".", show t, ")"]
+    show (App x y) = join ["(", show x, " ", show y, ")"]
+    show _ = error "Empty detected"
+
+data CompTerm = CompVar String
+    | CompAbs (CompTerm -> CompTerm)
+    | CompApp CompTerm CompTerm
+
+instance Show CompTerm where
+    show :: CompTerm -> String
     show t = show (substInts (toSyntax t))
 
-toSyntax :: Term -> (SyntaxTerm, [String])
+toSyntax :: CompTerm -> (Term, [String])
 toSyntax = toSyntaxRec 0 where
-    toSyntaxRec :: Int -> Term -> (SyntaxTerm, [String])
-    toSyntaxRec _ (Var x) = case readMaybeInt x of
-        Just n -> (SyntaxVar (show n), [])
-        Nothing -> (SyntaxVar x, [x])
-    toSyntaxRec n (Abs f) = let (term, freeVars) = toSyntaxRec (n+1) (f (Var (show n))) in (SyntaxAbs (show n) term, freeVars)
-    toSyntaxRec n (App t1 t2) = let
-        (t1', freeVars1) = toSyntaxRec n t1
-        (t2', freeVars2) = toSyntaxRec n t2
-        in (SyntaxApp t1' t2', removeDuplicates (freeVars1 ++ freeVars2)) where
-            removeDuplicates :: [String] -> [String]
-            removeDuplicates [] = []
-            removeDuplicates (x:xs)
-                | elem x xs = removeDuplicates xs
-                | otherwise = x : removeDuplicates xs
+    toSyntaxRec :: Int -> CompTerm -> (Term, [String])
+    toSyntaxRec _ (CompVar x) = case readMaybeInt x of
+        Just n -> (Var (show n), [])
+        Nothing -> (Var x, [x])
+    toSyntaxRec n (CompAbs f) = let (term, freeVars) = toSyntaxRec (n+1) (f (CompVar (show n))) in (Abs (show n) term, freeVars)
+    toSyntaxRec n (CompApp t1 t2) = let
+                (t1', freeVars1) = toSyntaxRec n t1
+                (t2', freeVars2) = toSyntaxRec n t2
+            in (App t1' t2', removeDuplicates (freeVars1 ++ freeVars2)) where
+                removeDuplicates :: [String] -> [String]
+                removeDuplicates [] = []
+                removeDuplicates (x:xs)
+                    | elem x xs = removeDuplicates xs
+                    | otherwise = x : removeDuplicates xs
 
 readMaybeInt :: String -> Maybe Int
 readMaybeInt = readMaybe
 
-substInts :: (SyntaxTerm, [String]) -> SyntaxTerm
+substInts :: (Term, [String]) -> Term
 substInts (term, freeVars) = substIntsRec [] term freeVars where
-    substIntsRec :: [String] -> SyntaxTerm -> [String] -> SyntaxTerm
-    substIntsRec varNames (SyntaxVar x) _ = case readMaybeInt x of
-        Just n -> SyntaxVar (varNames !! n)
-        Nothing -> SyntaxVar x
-    substIntsRec varNames (SyntaxApp t1 t2) usedVars = SyntaxApp (substIntsRec varNames t1 usedVars) (substIntsRec varNames t2 usedVars)
-    substIntsRec varNames (SyntaxAbs _ t) usedVars = let x = firstNameAvailable usedVars in SyntaxAbs x (substIntsRec (varNames ++ [x]) t (usedVars ++ [x]))
+    substIntsRec :: [String] -> Term -> [String] -> Term
+    substIntsRec varNames (Var x) _ = case readMaybeInt x of
+        Just n -> Var (varNames !! n)
+        Nothing -> Var x
+    substIntsRec varNames (App t1 t2) usedVars = App (substIntsRec varNames t1 usedVars) (substIntsRec varNames t2 usedVars)
+    substIntsRec varNames (Abs _ t) usedVars = let x = firstNameAvailable usedVars in Abs x (substIntsRec (varNames ++ [x]) t (usedVars ++ [x]))
     substIntsRec _ Empty _ = error "Empty detected"
 
 variableSet :: [String]
@@ -63,18 +65,18 @@ firstNameAvailable = firstNameAvailableRec 0 where
         | elem (variableSet !! n) usedVars = firstNameAvailableRec (n+1) usedVars
         | otherwise = variableSet !! n
 
+eval :: Term -> CompTerm
+eval = evalRec [] [] where
+    evalRec :: [CompTerm] -> [String] -> Term -> CompTerm
+    evalRec env vars (Abs v t) = CompAbs (\ x -> evalRec (x:env) (v:vars) t)
+    evalRec env vars (Var x) = case elemIndex x vars of
+        Just n -> env !! n
+        Nothing -> CompVar x
+    evalRec env vars (App t1 t2) = let t2' = evalRec env vars t2 in case evalRec env vars t1 of
+        CompAbs f -> f t2'
+        v@(CompVar _) -> CompApp v t2'
+        a@(CompApp _ _) -> CompApp a t2'
+    evalRec _ _ Empty = error "Empty detected"
+
 lastOccurrence :: (Eq a) => a -> [a] -> Maybe Int
 lastOccurrence x xs = foldl (\ acc (new, index) -> if new == x then Just index else acc) Nothing (zip xs [i | i <- [0..]])
-
-eval :: SyntaxTerm -> Term
-eval = evalRec [] [] where
-    evalRec :: [Term] -> [String] -> SyntaxTerm -> Term
-    evalRec env vars (SyntaxAbs v t) = Abs (\ x -> evalRec (env ++ [x]) (vars ++ [v]) t)
-    evalRec env vars (SyntaxVar x) = case lastOccurrence x vars of
-        Just n -> env !! n
-        Nothing -> Var x
-    evalRec env vars (SyntaxApp t1 t2) = let t2' = evalRec env vars t2 in case evalRec env vars t1 of
-        Abs f -> f t2'
-        v@(Var _) -> App v t2'
-        a@(App _ _) -> App a t2'
-    evalRec _ _ Empty = error "Empty detected"

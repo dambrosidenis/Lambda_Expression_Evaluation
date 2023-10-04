@@ -2,7 +2,7 @@
 module Evaluator where
 
 import Data.List ( (\\) )
-import Control.Monad (replicateM)
+import Control.Monad (replicateM, join)
  
 data Term =
     Var String
@@ -13,19 +13,17 @@ data Term =
 
 instance Show Term where
     show :: Term -> String
-    show = showTerm
-
-showTerm :: Term -> String
-showTerm (Var x) = x
-showTerm (Abs x term) = "(λ" ++ x ++ "." ++ showTerm term ++ ")"
-showTerm (App x y) = "(" ++ showTerm x ++ " " ++ showTerm y ++ ")"
-showTerm _ = error "Empty detected"
+    show (Var x) = x
+    show (Abs x t) = join ["(λ", x, ".", show t, ")"]
+    show (App x y) = join ["(", show x, " ", show y, ")"]
+    show _ = error "Empty detected"
 
 variableSet :: [String]
 variableSet = concatMap (\k -> replicateM k ['a'..'z']) [1..]
 
 firstNameAvailable :: [String] -> String
 firstNameAvailable = firstNameAvailableRec 0 where
+    firstNameAvailableRec :: Int -> [String] -> String
     firstNameAvailableRec n usedVars
         | elem (variableSet !! n) usedVars = firstNameAvailableRec (n+1) usedVars
         | otherwise = variableSet !! n
@@ -38,27 +36,28 @@ eval (App t1 t2) = case eval t1 of
 eval (Abs x t) = Abs x (eval t)
 eval Empty = error "Empty detected"
 eval t = t
+-- HEAD NORMAL FORM
 
 sub :: String -> Term -> Term -> Term
 sub x v@(Var y) newVal
     | x == y = newVal
     | otherwise = v
 sub x a@(Abs y t) newVal
-    | x == y = Abs y t
+    | x == y = a
     | notElem y (freeVars newVal) = Abs y (sub x t newVal)
-    | otherwise = let y' = firstNameAvailable (freeVars newVal) in Abs y' (sub x (rename y t y') newVal)
+    | otherwise = let y' = firstNameAvailable (freeVars newVal) in Abs y' (sub x (alphaConv y t y') newVal)
 sub x (App t1 t2) t = App (sub x t1 t) (sub x t2 t)
 sub _ Empty _ = error "Empty detected"
 
-rename :: String -> Term -> String -> Term
-rename x v@(Var y) z
+alphaConv :: String -> Term -> String -> Term
+alphaConv x v@(Var y) z
     | x == y = Var z
     | otherwise = v
-rename x (Abs y t) z
-    | x == y = Abs z (rename x t z)
-    | otherwise = Abs y (rename x t z)
-rename x (App t1 t2) z = App (rename x t1 z) (rename x t2 z)
-rename _ Empty _ = error "Empty detected"
+alphaConv x (Abs y t) z
+    | x == y = Abs z (alphaConv x t z)
+    | otherwise = Abs y (alphaConv x t z)
+alphaConv x (App t1 t2) z = App (alphaConv x t1 z) (alphaConv x t2 z)
+alphaConv _ Empty _ = error "Empty detected"
 
 freeVars :: Term -> [String]
 freeVars (Var x) = [x]

@@ -1,6 +1,7 @@
 \documentclass{article}
 
 % Packages
+\usepackage[margin=1.5in]{geometry}
 \usepackage{amsmath} % For mathematical symbols and equations
 \usepackage{amssymb} % For equation font
 \usepackage{graphicx} % For including images
@@ -10,27 +11,71 @@
 \usepackage{hyperref} % For clickable links
 \usepackage{epigraph} % For quotes
 \usepackage{listings}
+\usepackage{inconsolata}
+\usepackage[table,xcdraw]{xcolor}
+\usepackage{textgreek}
+
+\definecolor{strings}{rgb}{0.0, 0.47, 0.44}
+\definecolor{comments}{rgb}{0.4, 0.4, 0.5}
 
 \lstset{
+    xleftmargin=10pt,
+    xrightmargin=0pt,
+    framexleftmargin=0pt,
+    framexrightmargin=0pt,
+    basicstyle={\fontsize{9pt}{10pt}\ttfamily},
+    columns=flexible,
+    keepspaces=true,
+    showstringspaces=false,
+    commentstyle= \color{comments},
+    stringstyle= \color{strings},
+    breaklines=true,
+    postbreak=\mbox{$\hookrightarrow$\space},
     inputencoding=utf8,
     extendedchars=true,
-    literate={λ}{$\lambda$}1
+    literate={λ}{$\lambda$}1,
+    language=Haskell,
+    numbers=left
 }
+
+\usepackage[framemethod=TikZ]{mdframed}
+\usepackage{titlesec}
+
+\titleformat{\section}[hang]{\normalfont\scshape}{\thesection.}{2em}{}
+\titleformat{\subsection}[hang]{\normalfont\scshape}{\thesubsection.}{2em}{}
+\titleformat{\subsubsection}[hang]{\normalfont\scshape}{\thesubsubsection.}{2em}{}
+\renewcommand\abstractname{\normalfont\textsc{Abstract}}
+
 
 \setlength\epigraphwidth{.6\textwidth}
 \renewcommand{\epigraphflush}{flushright}
 
 % Document information
-\title{Evaluating untyped $\lambda$-expressions in Haskell}
-\author{D'Ambrosi Denis \\ \small \texttt{dambrosi.denis@spes.uniud.it} \\ \small \texttt{147681}}
+\title{\textsc{Evaluating untyped $\lambda$-expressions in Haskell}}
 \date{\today}
 
 \begin{document}
 
 \maketitle
 
-\begin{abstract}
-\end{abstract}
+\begin{center}
+\noindent\begin{minipage}{0.6\textwidth}
+    \textsc{Supervisor:} Prof. Alessi Fabio
+
+    \textsc{Co-Supervisor:} Prof. Di Gianantonio Pietro
+  \end{minipage}%
+  \begin{minipage}{0.4\textwidth}
+    \textsc{Author:} D'Ambrosi Denis
+
+    Student ID: 147681
+  \end{minipage}
+
+  \abstract{
+    \begin{mdframed}[backgroundcolor=black!3,rightline=false,leftline=false]
+      The recent widespread of Generative AI has caused a frantic turmoil of both excitement and apprehension all around the world. This technology has been adopted by many influential multinational companies, possibly directly or indirectly impacting billions of users globally, but there is still no shared consensus about the best guidelines to follow when developing or utilizing this form of innovation. In this paper, we will provide an examination of the most impelling risk scenarios that need to be addressed and will present an overview about the most relevant research efforts on possible countermeasures.
+    \end{mdframed}
+  }
+\end{center}
 
 \tableofcontents
 
@@ -38,13 +83,13 @@
 
 \section*{Introduction}
 
-In this report, we will explore various approaches to normalize expressions belonging to Church's $\lambda$-Calculus. In Section \ref{sec:lambdaintro}, we we briefly introduce the syntax and semantics of $\lambda$-Calculus, along with its reduction techniques. In Section \ref{sec:evaluation} we will actually present the implementations of three different strategies to solve this problem. Finally, in Section \ref{sec:conclusions} we will analyze the pros and cons of each approach and present some potential future work.
+In this report, we will explore various approaches to normalize expressions belonging to Church's $\lambda$-Calculus. In Section \ref{sec:lambdaintro}, we briefly introduce the syntax and semantics of $\lambda$-Calculus, along with its reduction techniques. In Section \ref{sec:evaluation} we will present the implementations of three different strategies to solve this problem. Finally, in Section \ref{sec:conclusions} we will analyze the pros and cons of each approach and present some potential future work.
 
 \section{Pure $\lambda$-Calculus} \label{sec:lambdaintro}
 
-Pure $\lambda$-Calculus, developed by Alonzo Church in the 1930s, is a formal system that plays a pivotal role in the foundation of theoretical computer science. It is a minimalist, yet immensely powerful, mathematical framework for expressing computation using only anonymous functions.
+Pure $\lambda$-Calculus, introduced by Alonzo Church in the 1930s \cite{church}, is a formal system that plays a pivotal role in the foundation of theoretical computer science. It is a minimalist, yet immensely powerful, mathematical framework for expressing computation using only anonymous functions.
 
-The set of $\lambda$-terms $\Lambda$ is the minimal set that can be constructed inductively according the following rules (that effectively define the syntax of this formalism):
+The set of $\lambda$-terms $\Lambda$ is the minimal set that can be constructed inductively according to the following rules (that effectively define the syntax of this formalism):
 
 \begin{enumerate}
     \item If $x$ is a variable, then $x \in \Lambda$
@@ -52,13 +97,13 @@ The set of $\lambda$-terms $\Lambda$ is the minimal set that can be constructed 
     \item If $M,N \in \Lambda$, then $(M\ N) \in \Lambda$
 \end{enumerate}
 
-Rule number 2 expresses the possibility of creating \textit{abstractions}. An abstraction is an anonymous function that takes as input a $\lambda$-term (in this case $x$) and returns a $\lambda$-term (not necessarily a variable, in this case $M$) as output. Multiple inputs functions can be constructed via a process called \textit{currying}: since higher-order-functions are allowed within $\lambda$-Calculus, we can transform any $n$-ary function into an abstraction that takes only one input and returns another abstraction as output. The latter will, in turn, consume only one input and produce yet another abstraction, and so on, $n$ times. Evaluating the last function will, eventually, produce the desired output.
+Rule number 2 expresses the possibility of creating \textit{abstractions}. An abstraction is an anonymous function that takes as input a $\lambda$-term (in this case $x$) and returns a $\lambda$-term (not necessarily a variable, in this case $M$) as output. Multiple input functions can be constructed via a process called \textit{currying}: since higher-order-functions are allowed within $\lambda$-Calculus, we can transform any $n$-ary function into an abstraction that takes only one input and returns another abstraction as output. The latter will, in turn, consume only one input and produce yet another abstraction, and so on, $n$ times. Evaluating the last function will, eventually, produce the desired output.
 
-Rule number 3, on the other hand, allows for the application of abstractions to $\lambda$-terms: performing such operation will yield a new $\lambda$-term according two main reduction operations:
+Rule number 3, on the other hand, allows for the application of abstractions to $\lambda$-terms: performing such an operation will yield a new $\lambda$-term according to two main reduction operations:
 
 \begin{enumerate}
-    \item \textit{$\alpha$-conversion} aims at renaiming bound variables for avoiding name collisions: $(\lambda x . M) \mapsto (\lambda y . M[x := y])$
-    \item \textit{$\beta$-reduction} actually normalizes $\lambda$-terms by replacing bound variables in the body of the abstraction with the actual parameter: $((\lambda x . M) N) \mapsto M[x := N]$
+    \item \textit{$\alpha$-conversion} aims at renaming bound variables for avoiding name collisions: $(\lambda x . M) \mapsto (\lambda y . M[x := y])$
+    \item \textit{$\beta$-reduction} normalizes $\lambda$-terms by replacing bound variables in the body of the abstraction with the actual parameter: $((\lambda x . M) N) \mapsto M[x := N]$
 \end{enumerate}
 
 Before executing a $\beta$-reduction step, we want to ensure that the actual parameter substituted within an abstraction's body does not appear \textit{free} in it. Formally, provided a $\lambda$-term $t$, the set of its \textit{Free variables} $FV(t)$ can be computed recursively as follows:
@@ -69,27 +114,27 @@ Before executing a $\beta$-reduction step, we want to ensure that the actual par
     \item $FV((M\ N)) = FV(M) \cup FV(N)$
 \end{itemize}
 
-If the input of the application appears free within the abstraction, then we must execute an process of $\alpha$-conversion on the latter to avoid any undesired change of semantics due to name clashing. If we did not take this additional care while substituting, we may inadvertly compute incorrect terms while $\beta$-reducing.
+If the input of the application appears free within the abstraction, then we must execute a process of $\alpha$-conversion on the latter to avoid any undesired change of semantics of the function caused by name clashes. If we did not take this additional care while substituting, we may inadvertently compute incorrect terms while $\beta$-reducing.
 
-This quick overview of the syntax and semantics of the $\lambda$-Calculus has laid the groundwork for introducing the actual implementations of $\lambda$-expressions evaluators of the upcoming sections. Before continuing, it is worth discussing briefly the reason why is formalism is still relevant, even after all these years. In 1936, Church proved that $\lambda$-Calculus is Turing complete, meaning that it has the computational power equivalent to a universal Turing machine. This critical property establishes $\lambda$-Calculus as a foundational formal system in the study of computation: this results implies that any computable function can be expressed and evaluated within the confines of $\lambda$-Calculus. Such fact underpins its applications not only in theoretical computer science but also in practical domains, where it serves as the basis for functional programming languages and aids in the development of algorithms for various computational tasks.
+This quick overview of the syntax and semantics of the $\lambda$-Calculus has laid the groundwork for introducing the actual implementations of $\lambda$-expressions evaluators of the upcoming sections. Before continuing, it is worth discussing briefly the reason why this formalism is still relevant, even after all these years. In 1937, Turing proved that $\lambda$-Calculus is Turing complete \cite{turing}, meaning that the formalism has the computational power equivalent to a universal Turing machine. This critical property establishes $\lambda$-Calculus as a foundational formal system in the study of computation: such result implies that any computable function can be expressed and evaluated within the confines of $\lambda$-Calculus. The consequences of this fact underpin its applications not only in theoretical computer science but also in practical domains, where it serves as the basis for functional programming languages and aids in the development of algorithms for various computational tasks.
 
 \section{Evaluating $\lambda$-expressions}\label{sec:evaluation}
 
-\epigraph{\textit{A monad is a monoid in the cathegory of endofunctors}}{\textit{Unknown}}
+\epigraph{\textit{A monad is just a monoid in the cathegory of endofunctors}}{\textsc{Saunders Mac Lane}\cite{mac}}
 
-Our objective consists in implementing an evaluator for $\lambda$-expressions that computes the normal form of each given $\lambda$-term. To provide a user-friendly-sh interface to our software, we allow users to write the input $\lambda$-expressions into a text file, that gets lexed and parsed before applying the reduction strategies. Our technology stack is completely Haskell-based and is structured as follows:
+Our objective consists in the implementation of an evaluator for $\lambda$-expressions that computes the normal form of each given $\lambda$-term. To provide a user-friendly interface to our software, we allow users to write the input $\lambda$-expressions into a text file, that gets lexed and parsed before applying the reduction strategies. Our technology stack is completely Haskell-based and is structured as follows:
 
 \begin{enumerate}
-    \item Alex as lexer
-    \item Happy as parser
-    \item The evaluation strategy is implemented in pure Haskell with some support from the Prelude ad List packages
+    \item Alex \cite{alex} as lexer generator
+    \item Happy \cite{happy} as parser generator
+    \item The evaluation strategy is implemented in pure Haskell with some support from the Prelude, List and Control modules
 \end{enumerate}
 
-In the following sections, we will give a brief overview of each phase by commenting the key pieces of code needed to perform the relative computation. Please note that the actual evaluation strategies are explained in detail in sections \ref{sec:algebraic} and \ref{sec:computational}
+In the following sections, we will give a brief overview of each phase by commenting the key pieces of code needed to perform the relative computation. Please note that the actual evaluation strategies are explained in detail in sections \ref{sec:algebraic} and \ref{sec:computational}. All the code will be publicly available at \cite{denis}
 
 \subsection{Lexing $\lambda$-expressions} \label{sec:lexing}
 
-As previously introduced, our lexer generator of choice is Alex. Alex allows developers to define a set of regular expression-based rules to recognise lexems from a text stream and produce the relative tokens according to predetermined actions. In practice, we first need to declare the set of our syntactic tokens by defining an abstract data type with a constructor for each single token. In our case, we need to recognise variables (that can be modelled as alphabetical strings), the $\lambda$ symbol, the . symbol, round parentheses, whitespaces and newlines characters (to allow the user to specify multiple expressions). In practice, this straightforwardly translates in the following Haskell datatype:
+As previously introduced, our lexer generator of choice is Alex. Alex allows developers to define a set of regular expression-based rules to recognize lexemes from a text stream and produce the relative tokens according to predetermined actions. In practice, we first need to declare the set of our syntactic tokens by defining an abstract data type with a constructor for each single token. In our case, we need to recognize variables (that can be modelled as alphabetical strings), the $\lambda$ symbol, dot, round parentheses, whitespaces and newlines characters (to allow the user to specify multiple expressions). In practice, this straightforwardly translates in the following Haskell datatype:
 
 \begin{lstlisting}
 data Token = NewLine
@@ -101,7 +146,7 @@ data Token = NewLine
 deriving (Eq, Show)
 \end{lstlisting}
 
-Now we can actually recognise lexemes through regular expressions. Alex's syntax allows user to associate names to regexes before use to improve readability: in our case, it will be helpful to define the language of single letters (both lower and uppercase):
+Now we can actually recognize lexemes through regular expressions. Alex's syntax allows users to associate names to regexes before use to improve readability: in our case, it will be helpful to define the language of single letters (both lower and uppercase):
 
 \begin{lstlisting}
 $letter = [a-zA-Z]
@@ -123,22 +168,22 @@ tokens :-
 Note that:
 
 \begin{enumerate}
-    \item We have associated an action to each lexeme in the form of a (ironically) Haskell $\lambda$-expression that maps the read string into the relative token. In our case the actions were trivially defined since we are dealing with a very simple language, but there is not limit to the complexity of these functions. Supporting functions can be also defined along with the custom datatype.
-    \item The lexems are ordered according to descending priority: even though the newline character will be recognised by both the first and the last expression, only the first one will be applied to produce a \lstinline|NewLine| token.
+    \item We have associated an action to each lexeme in the form of a (ironically) Haskell $\lambda$-expression that maps the read string into the relative token. In our case, the actions were trivially defined since we are dealing with a very simple language, but there is no limit to the complexity of these functions. Supporting functions can be also defined along with the custom datatype.
+    \item The lexemes are ordered according to descending priority: even though the newline character will be recognized by both the first and the last expression, only the first one will be applied to produce a \lstinline|NewLine| token.
 \end{enumerate}
 
-By compiling the file through Alex, we obtain a custom Haskell module that can be called from other modules to read any text stream and recognise its lexems. The following parser module will exploit such functionality to convert the input file into a stream of tokens that can be then converted into an abstract syntax tree.
+By compiling the file through Alex, we obtain a custom Haskell module that can be called from other modules to read any text stream and recognize its lexemes. The following parser module will exploit such functionality to convert the input file into a stream of tokens that can be then converted into an abstract syntax tree.
 
 \subsection{Parsing $\lambda$-expressions}
 
-Following a very similar computational pipeline to compilers' frontends, the lexed tokens must be analyzed by a parser. In our case, we adopted the Happy parser generator, which, given a grammar specified in Backus-Naur Form, produces the Haskell code to parse it. The modules produced through Happy adopt a \textit{LARL(1) bottom-up strategy} which is less powerful than the more general \textit{LR(1)} approach, yet can be implemented in a more efficient way. Since diving more deeply into the expressiveness and computational complexity of parsing techniques is out of the scope of this report, the reader can be satisfied by knowing that:
+Following a very similar computational pipeline to compilers' frontends, the lexed tokens must be analyzed by a parser. In our case, we adopted the Happy parser generator, which, given a grammar specified in Backus-Naur Form, produces the Haskell code to parse it. The modules produced through Happy adopt a \textit{LARL(1) bottom-up strategy} which is less powerful than the more general \textit{LR(1)} approach, yet can be implemented more efficiently. Since diving more deeply into the expressiveness and computational complexity of parsing techniques is out of the scope of this report, the reader can be satisfied by knowing that:
 
 \begin{enumerate}
-    \item Happy-generated parsers are expressive enough to recognise $\lambda$-Calculus terms (as a matter of fact, they are enough expressive to work in the GHC frontend!)
+    \item Happy-generated parsers are expressive enough to recognize $\lambda$-Calculus terms (as a matter of fact, they are enough expressive to work in the GHC frontend!)
     \item In the only case of this project where we would have benefited from a top-down parsing approach {see the closure issue in Section \ref{sec:computational}}, we easily overcame the problem by firstly building a syntax tree in a bottom-up fashion and then traversing the structure with a top-down algorithm.
 \end{enumerate}
 
-The objective of our parser will be to recognise the syntactic structure of each $\lambda$-expression and to feed it as a reasonable data structure to the evaluator. A trivial data type suitable for the task can be defined as follows:
+The objective of our parser will be to recognize the syntactic structure of each $\lambda$-expression and to feed it as a reasonable data structure to the evaluator. A trivial data type suitable for the task can be defined as follows:
 
 \begin{lstlisting}
 data Term =
@@ -149,7 +194,7 @@ data Term =
     deriving (Eq)
 \end{lstlisting}
 
-This abstract data type straightforwardly mirrors the construction of the set of $\lambda$-terms $\Lambda$ introduced in Section \ref{sec:lambdaintro}. The \lstinline|Empty| constructor is declared only to streamline the handling of empty lines in the input file and will not be considerated in the following evaluating strategies. As we can see, \lstinline|Term| derives the standard \lstinline|Eq| type class, but not \lstinline|Show|'s one. Instead, we decided to implement a custom function to pretty-print functions:
+This abstract data type straightforwardly mirrors the construction of the set of $\lambda$-terms $\Lambda$ introduced in Section \ref{sec:lambdaintro}. The \lstinline|Empty| constructor is declared only to streamline the handling of empty lines in the input file and will not be considered in the following evaluating strategies. As we can see, \lstinline|Term| derives the standard \lstinline|Eq| type class, but not \lstinline|Show|'s one. Instead, we decided to implement a custom function to pretty-print functions:
 
 \begin{lstlisting}
 instance Show Term where
@@ -191,7 +236,7 @@ Before proceeding with the description of the evaluation strategies, it is worth
 
 \begin{enumerate}
     \item Our specification requires the input stream to end with a \lstinline|NewLine| token: we could solve this issue by introducing additional symbols and/or rewriting rules, but disambiguating the obtained grammar would require a lot of effort. Instead, we opted to "artificially" append a \lstinline|NewLine| token at the end of the lexed stream before passing it to the parsing procedure, circumventing the issue efficiently and painlessly.
-    \item Contrary to the construction defined in Section \ref{sec:lambdaintro}, our specification allows the user to omit some brackets. This language expansion is a source of ambiguity, but we can tackle it by defining the abstraction and application as left-associative operations through the \lstinline|%left 'λ' '.' VAR| directive. At the end we are still left with a few shift/reduce conflicts, but thankfully the defaulting rules of Happy produce a parser with the desired behaviour without additional work.
+    \item Contrary to the construction defined in Section \ref{sec:lambdaintro}, our specification allows the user to omit some brackets. This language expansion is a source of ambiguity, but we can tackle it by defining the abstraction and application as left-associative operations through the \lstinline|%left 'λ' '.' VAR| directive. In the end, we are still left with a few shift/reduce conflicts, but thankfully the defaulting rules of Happy produce a parser with the desired behaviour without additional work.
 \end{enumerate}
 
 The generated parser will be the actual program compiled/interpreted, thus we need to define the main function of the software:
@@ -227,7 +272,7 @@ eval Empty = error "Empty detected"
 eval t = t
 \end{lstlisting}
 
-The process of $\beta$-reduction is actually applied in the first pattern of the definition: if a term consists in an application of an abstraction of variable $x$ and body $t$ to a term $t_1$, then substitute each (non-shadowed) occurrence of $x$ in $t$ with the normal form of $t_1$. The substitution routine \lstinline|sub| will be introduced shortly. On the other hand, if the root of the input data structure is an application of a non-abstraction term to another term, normalize the first argument: if it reduces to an abstraction, apply recursively the first pattern, otherwise return an application of the two normalized arguments. Finally, the remaining patterns are required to evaluate recursively abstractions and to provide a base-case for the recursion.
+The process of $\beta$-reduction is applied in the first pattern of the definition: if a term consists in an application of an abstraction of variable $x$ and body $t$ to a term $t_1$, then substitute each (non-shadowed) occurrence of $x$ in $t$ with the normal form of $t_1$. The substitution routine \lstinline|sub| will be introduced shortly. On the other hand, if the root of the input data structure is an application of a non-abstraction term to another term, normalize the first argument: if it reduces to an abstraction, apply recursively the first pattern, otherwise return an application of the two normalized arguments. Finally, the remaining patterns are required to evaluate recursively abstractions and to provide a base-case for the recursion.
 
 Actually substituting a term within a term requires a slightly more complex algorithm:
 
@@ -244,12 +289,12 @@ sub x (App t1 t2) t = App (sub x t1 t) (sub x t2 t)
 sub _ Empty _ = error "Empty detected"
 \end{lstlisting}
 
-The first pattern is the one which actually performs the substitution: if we have a variable denominated with the same symbol that must be substituted, then the variable is swapped-out in favour of the input term \lstinline|newVal|, otherwise the expression is unchanged. This ensures that, for example, $x[x:=y] \mapsto y$ and $x[z:=y] \mapsto x$.
+The first pattern is the one that actually performs the substitution: if we have a variable denominated with the same symbol that must be substituted, then the variable is swapped-out in favor of the input term \lstinline|newVal|, otherwise the expression is unchanged. This ensures that, for example, $x[x:=y] \mapsto y$ and $x[z:=y] \mapsto x$.
 
 The second pattern actually introduces the $\alpha$-reduction, as it deals with the substitution of a term within an abstraction. Let us explain the three cases separately:
 
 \begin{enumerate}
-    \item If $x=y$, than it means that the symbol to substitute has been shadowed by a new declaration, thus the substitution must not been spread further. By doing that, we can guarantee that
+    \item If $x=y$, then it means that the symbol to substitute has been shadowed by a new declaration, thus the substitution must not be spread further. By doing that, we can guarantee that
     \begin{align*}
         (x (\lambda x . z x))[x := (\lambda y . y)] &\mapsto ((\lambda y . y) (\lambda x . z x))\\
         (x (\lambda x . z x))[x := (\lambda y . y)] &\not \mapsto ((\lambda y . y) (\lambda x . z (\lambda y . y)))
@@ -275,7 +320,7 @@ freeVars (App t1 t2) = freeVars t1 ++ freeVars t2
 freeVars _ = error "Empty detected"
 \end{lstlisting}
 
-Where \lstinline|\\| is the list removal operator imported from \lstinline|Data.List|.
+Where \lstinline|(\\)| is the list removal operator imported from \lstinline|Data.List|.
 
 Before concluding, we still need to explain how we engineered the $\alpha$-conversion process. The renaming function (\lstinline|alphaConv|) traverses the structure in a top-down fashion while substituting each occurrence of the problematic variable (clearly also the $\lambda$-bindings) with the new symbol.
 
@@ -302,7 +347,7 @@ firstNameAvailable = firstNameAvailableRec 0 where
         | otherwise = variableSet !! n
 \end{lstlisting}
 
-This procedure returns the first occurrence of a variable that belongs to \lstinline|variableSet|, but not to \lstinline|usedVars|. From a Software Engineering perspective, one may be concerned by the fact that there is no error handling code: if all the variables within \lstinline|variableSet| appeared in \lstinline|usedVars|, we would end up trying to access an unexistent location of the former. Thankfully, Haskell features a lazy-evaluation mechanism that allows for the definition infinite structures. As a matter of fact, \lstinline|variableSet| has been defined as a list, ordered by length (and, subsequently, alphabetically), of all the possible strings (thus we could visualize it as \lstinline|["a", "b", "c", ..., "z", "aa", "ab" ..., "zz", "aaa", ...]|): in practice, this guarantees that a new symbol will always be found.
+This procedure returns the first occurrence of a variable belonging to \lstinline|variableSet|, but not to \lstinline|usedVars|. From a Software Engineering perspective, one may be concerned by the fact that there is no error handling code: if all the variables within \lstinline|variableSet| appeared in \lstinline|usedVars|, we would end up trying to access an unexistent location of the former. Thankfully, Haskell features a lazy-evaluation mechanism that allows for the definition of infinite structures. As a matter of fact, \lstinline|variableSet| has been defined as a list, ordered by length (and, subsequently, alphabetically), of all the possible strings (thus we could visualize it as \lstinline|["a", "b", "c", ..., "z", "aa", "ab" ..., "zz", "aaa", ...]|): in practice, this guarantees that a new symbol will always be found.
 
 \begin{lstlisting}
 variableSet :: [String]
@@ -313,7 +358,7 @@ Note that \lstinline|replicateM| is the function imported from \lstinline|Data.L
 
 \subsubsection{De Bruijn Indexes method}
 
-An alternative to $\alpha$-conversion is implementing the De Bruijn Indexes. This consists in translating the $\lambda$-expressions into an alternative syntax where the variables bound by abstractions are not identified by their symbol, but instead by the level of nesting of their binding. There are multiple ways of representing free variables, but we chose to use directly the symbol with which they appeared in the original expression. Some example of this conversion are as follows:
+An alternative to $\alpha$-conversion is implementing the De Bruijn Indexes. This consists of translating the $\lambda$-expressions into an alternative syntax where the variables bound by abstractions are not identified by their symbol, but instead by the level of nesting of their binding. There are multiple ways of representing free variables, but we chose to use directly the symbol with which they appeared in the original expression. Some examples of this conversion are as follows:
 
 \begin{align*}
 (\lambda x . x) &\mapsto (\lambda 1)\\
@@ -321,7 +366,7 @@ An alternative to $\alpha$-conversion is implementing the De Bruijn Indexes. Thi
 (\lambda x . (\lambda y . (\lambda z . (x\ z) c))) &\mapsto (\lambda(\lambda(\lambda ((3\ 1) c))))
 \end{align*}
 
-By applying this conversion, we eliminate the need of binding names, so we can apply term substitutions within abstractions based solely on the order of application. To implement this strategy, we clearly need firstly a new data type that re-defines variables and abstractions:
+By applying this conversion, we eliminate the requirement to bind names, so we can apply term substitutions within abstractions based solely on the order of application. To implement this strategy, we clearly need a new data type that re-defines variables and abstractions:
 
 \begin{lstlisting}
 data DBTerm = DBVar Int
@@ -352,7 +397,7 @@ toDeBruijn = toDeBruijnRec [] where
     toDeBruijnRec _ Empty = error "Empty detected"
 \end{lstlisting}
 
-This function traverses recursively the tree that defines the expression, gradually keeping track of the bound variables in the parameter \lstinline|vars|. This ensures that, when we actually encounter a term in the form \lstinline|(Var x)|, we can establish whether \lstinline|x| was a bound name (if there exists at least an index in corrispondence of which the symbol appears in \lstinline|vars|), or if it is a constant, thanks to the monadic characterization of \lstinline|elemIndex|. Note that we managed \lstinline|vars| as a stack instead of a list (we append items to the head, using the \lstinline|(:)| operator) to allow name shadowing: by doing this, if \lstinline|elemIndex| finds an integer, we are sure that it is the innermost binding of that variable.
+This function traverses recursively the tree that defines the expression, gradually keeping track of the bound variables in the parameter \lstinline|vars|. This ensures that, when we actually encounter a term in the form \lstinline|(Var x)|, we can establish whether \lstinline|x| was a bound name (if there exists at least an index in correspondence of which the symbol appears in \lstinline|vars|), or if it is a constant, thanks to the monadic characterization of \lstinline|elemIndex|. Note that we managed \lstinline|vars| as a stack instead of a list (we append items to the head, using the \lstinline|(:)| operator) to allow name shadowing: by doing this, if \lstinline|elemIndex| finds an integer, we are sure that it is the innermost binding of that variable.
 
 After the translation, normalizing $\lambda$-terms in De Bruijn's notation becomes quite easier compared to the algebraic method with $\alpha$-conversion. In fact, while the \lstinline|eval| procedure remains practically the same, the \lstinline|sub| routine is far less intricated, without the need of supporting functions:
 
@@ -376,11 +421,11 @@ sub (DBAbs t1) t2 n = DBAbs (sub t1 t2 (n+1))
 sub (DBApp t1 t2) t n = DBApp (sub t1 t n) (sub t2 t n)
 \end{lstlisting}
 
-The \lstinline|sub| function substitutes a variable with a given term only if the level of nesting of the variable is equal to the one of the searched binding (note that when we recursively iterate on an abstraction, we increase such number by $1$, as we are "moving away" from the relevant binding). Clearly, constants never get substituted (notice how here we do not have the issue of name clashing with the free variables) and applications only need to spread the substitution through the tree's structure.
+The \lstinline|sub| function substitutes a variable with a given term only if the level of nesting of the variable is equal to the one of the searched binding (note that when we recursively iterate on an abstraction, we increase such number by $1$, as we are "moving away" from the relevant binding). Clearly, constants never get substituted (notice how here we do not have the issue of name clashes with the free variables) and applications only need to spread the substitution through the tree's structure.
 
 \subsection{Evaluating $\lambda$-terms: the computational approach} \label{sec:computational}
 
-While the $\alpha$-conversion and the De Bruijn Indexes method are very similar at their core (firstly we guarantee to avoid name clashing through some form of transformation of the expression and then we apply a substitution), the computational method takes a completely different approach. It aims at exploiting Haskell's own anonymous functions to implement actual $\lambda$-abstractions capable of evaluating terms.
+While the $\alpha$-conversion and the De Bruijn Indexes method are very similar at their core (firstly we guarantee to avoid name clashes through some form of transformation of the expression and then we apply a substitution), the computational method takes a completely different approach. It aims at exploiting Haskell's anonymous functions to implement actual $\lambda$-abstractions capable of evaluating terms.
 
 First of all, we need to define a new abstract data type capable of storing variables, applications and anonymous functions:
 
@@ -414,7 +459,7 @@ Let us dissect the above code snippet to better understand how it works. The rec
 \begin{enumerate}
     \item A list of actual parameters (initially empty)
     \item A list of names for said parameters (initially empty)
-    \item An algebraic term to traverses
+    \item An algebraic term to traverse
 \end{enumerate}
 
 If the term is an abstraction, we create a new \lstinline|CompAbs| instance that holds an actual anonymous function. Said function will be created recursively thanks to the environment augmented with the actual parameter (in this case, \lstinline|x|) and the formal parameter (in this case, \lstinline|v|). Note that, again, we build the closure as a stack to allow name shadowing later on.
@@ -423,9 +468,9 @@ If the term is a variable, then it must mean that we must distinguish whether it
 
 If the term is an application, then we have to check the type of its first argument: if it is an abstraction, then we can straightforwardly apply it to the normalized parameter $t_2'$. On the other hand, if it is an application or a variable, we can always reduce the second argument and then save the normalized application.
 
-By substituting the algebraic terms with actual functions we avoid the issue of name clashing, since when an abstraction will be ready for application, it will evaluate its argument according to the environment indexing, in a similar fashion to De Bruijn's Indexes.
+By substituting the algebraic terms with actual functions we avoid the issue of name clashes, since when an abstraction is ready for application, it will evaluate its argument according to the environment indexing, in a similar fashion to De Bruijn's Indexes.
 
-As introduced before, printing an expression will not be as simple as in the previous approaches: it is not possible to inspect an anonymous function's body after creation, which essentially becomes an inspetionable \textit{black-box}. Our best bet is to deduce the structure of a $\lambda$-expression by passing selected parameters to it and looking how it computes the result: we can not scrutinize the computation steps by themselves, but the instances of \lstinline|CompVar| can. For example, if we had a function $f$ and we knew that $f a = a$, then we could infere that either $f = \lambda x . x$ or $f = \lambda x . a$. We must find a way to discriminate between such cases: by coming back to the definition of our lexer in Section \ref{sec:lexing}, we can see that we did not allow numbers as identifiers, only alphabetic characters. If we fed numerical arguments (as strings, of course), to the functions, we could easily distinguish between actual bound variables (that would end up being numberical) and constants (which will belong to the set of recognised tokens, i.e. letters). This procedure can be applied recursively to deduce the structure of the abstractions at each nesting level.
+As introduced before, printing an expression will not be as simple as in the previous approaches: it is not possible to inspect an anonymous function's body after creation, which essentially becomes a non-examinable \textit{black-box}. Our best bet is to deduce the structure of a $\lambda$-expression by passing selected parameters to it and looking at how it computes the result: we can not scrutinize the computation steps by themselves, but the instances of \lstinline|CompVar| can. For example, if we had a function $f$ and we knew that $f a = a$, then we could infer that either $f = \lambda x . x$ or $f = \lambda x . a$. We must find a way to discriminate between such cases: by coming back to the definition of our lexer in Section \ref{sec:lexing}, we can see that we did not allow numbers as identifiers, only alphabetic characters. If we fed numerical arguments (as strings, of course), to the functions, we could easily distinguish between actual bound variables (that would end up being numerical) and constants (which will belong to the set of recognized tokens, i.e. letters). This procedure can be applied recursively to deduce the structure of the abstractions at each nesting level.
 
 In practice, we coded a function that transforms a \lstinline|CompTerm| into a \lstinline|Term| by feeding strings encoding numbers incrementally larger into the abstractions and observing the results:
 
@@ -451,9 +496,9 @@ readMaybeInt :: String -> Maybe Int
 readMaybeInt = readMaybe
 \end{lstlisting}
 
-In the base case, \lstinline|toSyntaxRec| discriminates between bound (values that can be read as an integer) and free (values that encode strings) variables. Starting from this, it constructs the set of free variables with a top-down approach: applications only need to spread the conversion further, functions must feed a number and increment it gradually as explained before. In the end we end up with a pair that contains the algebraic expression as first coordinate and the set of free variables as the second.
+In the base case, \lstinline|toSyntaxRec| discriminates between bound (values that can be read as an integer) and free (values that encode strings) variables. Starting from this, it constructs the set of free variables with a top-down approach: applications only need to spread the conversion further and functions must feed a number and increment it gradually as explained before. In the end, we compute a pair that contains the algebraic expression as the first coordinate and the set of free variables as the second.
 
-Now we only need to substitute the numeric symbols with alphabetical names while being careful of not causing accidental name captures. The following function does exactly that:
+Now we only need to substitute the numeric symbols with alphabetical names while being careful of not to cause accidental name captures. The following function does exactly that:
 
 \begin{lstlisting}
 substInts :: (Term, [String]) -> Term
@@ -467,18 +512,15 @@ substInts (term, freeVars) = substIntsRec [] term freeVars where
     substIntsRec _ Empty _ = error "Empty detected"
 \end{lstlisting}
 
-We substitute the bound variables and the bindings while being careful to avoid to choose the free variables (note the use of the previously defined function \lstinline|firstNameAvailable|).
+We substitute the bound variables and the bindings while being careful to avoid choosing the free variables (note the use of the previously defined function \lstinline|firstNameAvailable|).
 
 \section{Conclusions}\label{sec:conclusions}
 
-In this report, we implemented different techniques to evaluate $\lambda$-expressions. The algebraic approach is generally simpler to realize, especially in Haskell where efficient recursion and pattern matching make the implementation of the substitution procedure almost trivial. This approach may suffer of the problem of name clashing: to avoid it, we analyzed both the $\alpha$-conversion and the De Bruijn Indexes techniques. The former requires some care to handle the names, but yet again Haskell's capability of handling infinite structures through lazy evaluation proves to be useful as we have access to an unlimited set of symbols. The latter, on the other hand, requires a conversion at first, but the substitution becomes effortless after. We decided to keep the expressions in De Bruijn's notation to provide some examples of this alternative, but it would be easy to write a function that translates the terms back into the original notation if we wanted to. Finally, we showed how it is possible to normalize expressions exploiting Haskell's own anonymous functions: this approach, although seems easy at first, quickly becomes slightly cumbersome as it requires to create environments and to develop a quite complicated print mechanism with multiple conversions.
+In this report, we implemented different techniques to evaluate $\lambda$-expressions. The algebraic approach is generally simpler to realize, especially in Haskell where efficient recursion and pattern matching make the implementation of the substitution procedure almost trivial. This approach may suffer from the problem of name clashes: to avoid it, we analyzed both the $\alpha$-conversion and the De Bruijn Indexes techniques. The former requires some care to handle the names, but yet again Haskell's capability of handling infinite structures through lazy evaluation proves to be useful as we have access to an unlimited set of symbols. The latter, on the other hand, requires a conversion at first, but the substitution becomes effortless after. We decided to keep the expressions in De Bruijn's notation to provide some examples of this alternative, but it would be easy to write a function that translates the terms back into the original notation if we wanted to. Finally, we showed how it is possible to normalize expressions exploiting Haskell's own anonymous functions: this approach, although seems easy at first, quickly becomes slightly cumbersome as it requires creating environments and developing a quite complicated print mechanism with multiple conversions.
 
 As future work, it would be interesting to see if there are simpler, more elegant alternatives to the double-translation printing procedure for the computational approach and, more generally, if it is possible to tackle the problem of normalizing $\lambda$ expressions with alternative methods.
 
-
-
 % Bibliography
-\clearpage
 \bibliographystyle{alpha} % Choose a bibliography style
 \bibliography{references} % Specify the bibliography file
 

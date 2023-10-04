@@ -1,9 +1,9 @@
 \contentsline {section}{\numberline {1}Pure $\lambda $-Calculus}{2}{section.1}%
 \contentsline {section}{\numberline {2}Evaluating $\lambda $-expressions}{3}{section.2}%
-\contentsline {subsection}{\numberline {2.1}Lexing $\lambda $-expressions}{4}{subsection.2.1}%
-\contentsline {subsection}{\numberline {2.2}Parsing $\lambda $-expressions}{5}{subsection.2.2}%
-\contentsline {subsection}{\numberline {2.3}Evaluating $\lambda $-terms: the algebraic approach}{7}{subsection.2.3}%
-\contentsline {subsubsection}{\numberline {2.3.1}Alpha conversion method}{7}{subsubsection.2.3.1}%
-\contentsline {subsubsection}{\numberline {2.3.2}De Bruijn Indexes method}{10}{subsubsection.2.3.2}%
-\contentsline {subsection}{\numberline {2.4}Evaluating $\lambda $-terms: the computational approach}{11}{subsection.2.4}%
-\contentsline {section}{\numberline {3}Conclusions}{14}{section.3}%
+\contentsline {subsection}{\numberline {2.1}Lexing $\lambda $-expressions}{3}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Parsing $\lambda $-expressions}{4}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Evaluating $\lambda $-terms: the algebraic approach}{6}{subsection.2.3}%
+\contentsline {subsubsection}{\numberline {2.3.1}Alpha conversion method}{6}{subsubsection.2.3.1}%
+\contentsline {subsubsection}{\numberline {2.3.2}De Bruijn Indexes method}{8}{subsubsection.2.3.2}%
+\contentsline {subsection}{\numberline {2.4}Evaluating $\lambda $-terms: the computational approach}{10}{subsection.2.4}%
+\contentsline {section}{\numberline {3}Conclusions}{12}{section.3}%
