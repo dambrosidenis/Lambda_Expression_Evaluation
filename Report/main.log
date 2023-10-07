@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2022.7.15)  7 OCT 2023 16:41
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2022.7.15)  7 OCT 2023 16:42
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1413,7 +1413,7 @@ Package hyperref Warning: Token not allowed in a PDF string (Unicode):
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
 (hyperref)                removing `math shift' on input line 442.
 
-[11] [12] [13] (./main.bbl [14]
+[11] [12] [13] [14] (./main.bbl
 LaTeX Font Info:    Font shape `OT1/zi4/m/n' will be
 (Font)              scaled to size 10.0pt on input line 16.
 
@@ -1422,7 +1422,9 @@ Underfull \hbox (badness 1931) in paragraph at lines 24--27
 OT1/zi4/m/n/10 https : / /
  []
 
-) [15] (./main.aux)
+) [15
+
+] (./main.aux)
 Package rerunfilecheck Info: File `main.out' has not changed.
 (rerunfilecheck)             Checksum: 35D023670439047989EC9F25463571E6;1642.
  ) 
@@ -1454,7 +1456,7 @@ local/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb></usr/lo
 cal/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/loc
 al/texlive/2022/texmf-dist/fonts/type1/public/amsfonts/cm/cmti9.pfb></usr/local
 /texlive/2022/texmf-dist/fonts/type1/public/cbfonts/grmn1000.pfb>
-Output written on main.pdf (15 pages, 281172 bytes).
+Output written on main.pdf (15 pages, 281155 bytes).
 PDF statistics:
  528 PDF objects out of 1000 (max. 8388607)
  469 compressed objects within 5 object streams
