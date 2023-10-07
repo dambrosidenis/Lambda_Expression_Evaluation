@@ -1,9 +1,19 @@
 \begin{thebibliography}{Chu36}
 
+\bibitem[Bar93]{barendregt}
+Henk~P. Barendregt.
+\newblock {\em Lambda Calculi with Types}, pages 117--309.
+\newblock Oxford University Press, Inc., 1993.
+
 \bibitem[Chu36]{church}
 Alonzo Church.
 \newblock An unsolvable problem of elementary number theory.
 \newblock {\em American Journal of Mathematics}, 58:345, 1936.
+
+\bibitem[D'A]{denis}
+Denis D'Ambrosi.
+\newblock Lambda calculus in haskell.
+\newblock \url{https://github.com/dambrosidenis/Lambda-Calculus-in-Haskell}.
 
 \bibitem[DJM]{alex}
 Chris Dornan, Isaac Jones, and Simon Marlow.

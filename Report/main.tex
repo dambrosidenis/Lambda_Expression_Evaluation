@@ -1,7 +1,7 @@
 \documentclass{article}
 
 % Packages
-\usepackage[margin=1.5in]{geometry}
+\usepackage[margin=1.7in]{geometry}
 \usepackage{amsmath} % For mathematical symbols and equations
 \usepackage{amssymb} % For equation font
 \usepackage{graphicx} % For including images
@@ -14,6 +14,7 @@
 \usepackage{inconsolata}
 \usepackage[table,xcdraw]{xcolor}
 \usepackage{textgreek}
+\usepackage{dirtree}
 
 \definecolor{strings}{rgb}{0.0, 0.47, 0.44}
 \definecolor{comments}{rgb}{0.4, 0.4, 0.5}
@@ -35,7 +36,7 @@
     extendedchars=true,
     literate={λ}{$\lambda$}1,
     language=Haskell,
-    numbers=left
+    %numbers=left
 }
 
 \usepackage[framemethod=TikZ]{mdframed}
@@ -59,23 +60,27 @@
 \maketitle
 
 \begin{center}
-\noindent\begin{minipage}{0.6\textwidth}
+\noindent\begin{minipage}{0.68\textwidth}
     \textsc{Supervisor:} Prof. Alessi Fabio
 
     \textsc{Co-Supervisor:} Prof. Di Gianantonio Pietro
   \end{minipage}%
-  \begin{minipage}{0.4\textwidth}
+  \begin{minipage}{0.5\textwidth}
     \textsc{Author:} D'Ambrosi Denis
 
     Student ID: 147681
   \end{minipage}
 
+  \vspace{0.5cm}
+
   \abstract{
     \begin{mdframed}[backgroundcolor=black!3,rightline=false,leftline=false]
-      The recent widespread of Generative AI has caused a frantic turmoil of both excitement and apprehension all around the world. This technology has been adopted by many influential multinational companies, possibly directly or indirectly impacting billions of users globally, but there is still no shared consensus about the best guidelines to follow when developing or utilizing this form of innovation. In this paper, we will provide an examination of the most impelling risk scenarios that need to be addressed and will present an overview about the most relevant research efforts on possible countermeasures.
+      \noindent Ever since its introduction in 1936, $\lambda$-Calculus has been a staple of any Computer Scientist's study curriculum, thanks to its minimalistic syntax that still allows plenty of expressive capabilities. While many sources refer to it as a merely theoretical topic, in this report we wanted to propose a more practical overview of the key concepts on which this formalism relies, by showing various approaches for implementing evaluators of $\lambda$-expressions in the purely functional programming language Haskell.
     \end{mdframed}
   }
 \end{center}
+
+\vspace{0.5cm}
 
 \tableofcontents
 
@@ -87,7 +92,7 @@ In this report, we will explore various approaches to normalize expressions belo
 
 \section{Pure $\lambda$-Calculus} \label{sec:lambdaintro}
 
-Pure $\lambda$-Calculus, introduced by Alonzo Church in the 1930s \cite{church}, is a formal system that plays a pivotal role in the foundation of theoretical computer science. It is a minimalist, yet immensely powerful, mathematical framework for expressing computation using only anonymous functions.
+Pure $\lambda$-Calculus, introduced by Alonzo Church in the 1930s \cite{church}, is a formal system that plays a pivotal role in the foundation of theoretical computer science. It is a minimalist, yet immensely powerful, mathematical framework for expressing computation using only anonymous functions. In this section, we will provide an overview to such formalism, following the contents of the second chapter of \cite{barendregt}.
 
 The set of $\lambda$-terms $\Lambda$ is the minimal set that can be constructed inductively according to the following rules (that effectively define the syntax of this formalism):
 
@@ -99,30 +104,40 @@ The set of $\lambda$-terms $\Lambda$ is the minimal set that can be constructed 
 
 Rule number 2 expresses the possibility of creating \textit{abstractions}. An abstraction is an anonymous function that takes as input a $\lambda$-term (in this case $x$) and returns a $\lambda$-term (not necessarily a variable, in this case $M$) as output. Multiple input functions can be constructed via a process called \textit{currying}: since higher-order-functions are allowed within $\lambda$-Calculus, we can transform any $n$-ary function into an abstraction that takes only one input and returns another abstraction as output. The latter will, in turn, consume only one input and produce yet another abstraction, and so on, $n$ times. Evaluating the last function will, eventually, produce the desired output.
 
-Rule number 3, on the other hand, allows for the application of abstractions to $\lambda$-terms: performing such an operation will yield a new $\lambda$-term according to two main reduction operations:
+Rule number 3, on the other hand, allows for the application of abstractions to $\lambda$-terms: through an operation called \textit{$\beta$-reduction}, we can substitute the variable bound by an abstraction within its body with a given argument. Formally, this can be expressed as $((\lambda x . M) N) \mapsto_\beta M[x := N]$, where $((\lambda x . M) N)$ is called a \textit{$\beta$-redex} and $M[x := N]$ its \textit{contractum}, or \textit{reduct}. Such operation is at the core of the recursive computations possible on $\lambda$-terms, but requires a supporting operation to avoid name clashes: \textit{$\alpha$-conversion}. The latter aims at renaming bound variables for avoiding name collisions through the following rewriting rule: $(\lambda x . M) \mapsto (\lambda y . M[x := y])$. In practice, before executing a $\beta$-reduction step, we want to ensure that the formal parameter substituted within an abstraction's body does not appear \textit{free} in the actual parameter. Formally, provided a $\lambda$-term $t$, the set of its \textit{Free variables} $FV(t)$ can be computed recursively as follows:
 
-\begin{enumerate}
-    \item \textit{$\alpha$-conversion} aims at renaming bound variables for avoiding name collisions: $(\lambda x . M) \mapsto (\lambda y . M[x := y])$
-    \item \textit{$\beta$-reduction} normalizes $\lambda$-terms by replacing bound variables in the body of the abstraction with the actual parameter: $((\lambda x . M) N) \mapsto M[x := N]$
-\end{enumerate}
+\begin{align*}
+    &FV(x) = x \text{ if } x \text{ is a variable}\\
+    &FV((\lambda x . M)) = FV(M) \setminus x\\
+    &FV((M\ N)) = FV(M) \cup FV(N)\\
+\end{align*}
 
-Before executing a $\beta$-reduction step, we want to ensure that the actual parameter substituted within an abstraction's body does not appear \textit{free} in it. Formally, provided a $\lambda$-term $t$, the set of its \textit{Free variables} $FV(t)$ can be computed recursively as follows:
+If the variable bound by the abstraction of the application appears free within the parameters, then we must execute a process of $\alpha$-conversion on the former to avoid any undesired change of semantics of the function caused by name clashes. If we did not take this additional care while substituting, we may inadvertently compute incorrect terms while $\beta$-reducing, for example:
 
-\begin{itemize}
-    \item $FV(x) = x$ if $x$ is a variable
-    \item $FV((\lambda x . M)) = FV(M) \setminus x$
-    \item $FV((M\ N)) = FV(M) \cup FV(N)$
-\end{itemize}
+$$((\lambda x. (\lambda y.(x\ y)))\ y) \mapsto_\beta (\lambda y . (x \ y))[x:=y] = (\lambda y . (y \ y))$$
 
-If the input of the application appears free within the abstraction, then we must execute a process of $\alpha$-conversion on the latter to avoid any undesired change of semantics of the function caused by name clashes. If we did not take this additional care while substituting, we may inadvertently compute incorrect terms while $\beta$-reducing.
+Clearly this results in an incorrect evaluation, as the original abstraction was meant to take two parameters and return the application of the first to the second. By executing $\beta$-reduction steps without proper $\alpha$-conversions instead, after the first application we obtain an abstraction that takes a parameter and applies it to itself as a result.
 
-This quick overview of the syntax and semantics of the $\lambda$-Calculus has laid the groundwork for introducing the actual implementations of $\lambda$-expressions evaluators of the upcoming sections. Before continuing, it is worth discussing briefly the reason why this formalism is still relevant, even after all these years. In 1937, Turing proved that $\lambda$-Calculus is Turing complete \cite{turing}, meaning that the formalism has the computational power equivalent to a universal Turing machine. This critical property establishes $\lambda$-Calculus as a foundational formal system in the study of computation: such result implies that any computable function can be expressed and evaluated within the confines of $\lambda$-Calculus. The consequences of this fact underpin its applications not only in theoretical computer science but also in practical domains, where it serves as the basis for functional programming languages and aids in the development of algorithms for various computational tasks.
+On the other hand, if we renamed the free variable $y$ within the abstraction's body, we would have had that:
+
+\begin{align*}
+    &((\lambda x . (\lambda y . (x\ y)))\ y) \mapsto_\alpha ((\lambda x . (\lambda y . (x\ y))[y:=z])\ y) = ((\lambda x . (\lambda z . (x\ z)))\ y)\\
+    &((\lambda x . (\lambda z . (x\ z)))\ y) \mapsto_\beta ((\lambda z . (x\ z))[x:=y]) = (\lambda z . (y\ z))
+\end{align*}
+
+\noindent following the original expression's semantics. Before concluding this brief overview, it is worth to note that there exists a third form of conversion, namely \textit{$\eta$-conversion}. This operation introduces the concept of \textit{extensionality}, as it allows to drop an abstraction if it does not use its bound variable. More formally,
+
+$$((\lambda x.M)\ x) =_\eta M \iff x \not \in FV(M)$$
+
+This concept simplifies proofs within this formalism, as it introduces some useful equivalence classes, but we will not use it in our implementation, as we are dealing with reductions, and not equivalences in general. In particular, our objective is, given a term, to compute its \textit{$\beta$-normal form}: a $\lambda$-term is said to be in $\beta$-nf if it does not have a $\beta$-redex as a subexpression. Since we want to simplify terms, extensionality will not do us any favor.
+
+This quick overview of the syntax and semantics of the $\lambda$-Calculus has laid the groundwork for introducing the actual implementations of $\lambda$-expressions evaluators of the upcoming sections. Before continuing, it is worth discussing briefly the reason why this formalism is still relevant, even after all these years. In 1937, Turing proved that $\lambda$-Calculus is Turing complete \cite{turing}, meaning that the formalism has the computational power equivalent to a universal Turing machine. This critical property establishes $\lambda$-Calculus as a foundational formal system in the study of computation: such result implies that any computable function can be expressed and evaluated within the confines of $\lambda$-Calculus. The consequences of this fact underpin its applications not only in theoretical computer science but also in practical domains: such formalism serves as the foundation of the functional programming paradigm and has been widely implemented in all the major general-purpose languages for additional flexibility.
 
 \section{Evaluating $\lambda$-expressions}\label{sec:evaluation}
 
 \epigraph{\textit{A monad is just a monoid in the cathegory of endofunctors}}{\textsc{Saunders Mac Lane}\cite{mac}}
 
-Our objective consists in the implementation of an evaluator for $\lambda$-expressions that computes the normal form of each given $\lambda$-term. To provide a user-friendly interface to our software, we allow users to write the input $\lambda$-expressions into a text file, that gets lexed and parsed before applying the reduction strategies. Our technology stack is completely Haskell-based and is structured as follows:
+Our objective consists in the implementation of an evaluator for $\lambda$-expressions that computes the normal form of each given $\lambda$-term. To provide a user-friendly interface to our software, we allow users to write the input $\lambda$-expressions into a text file, that gets scanned and parsed before applying the reduction strategies. Our technology stack is completely Haskell-based and is structured as follows:
 
 \begin{enumerate}
     \item Alex \cite{alex} as lexer generator
@@ -130,7 +145,7 @@ Our objective consists in the implementation of an evaluator for $\lambda$-expre
     \item The evaluation strategy is implemented in pure Haskell with some support from the Prelude, List and Control modules
 \end{enumerate}
 
-In the following sections, we will give a brief overview of each phase by commenting the key pieces of code needed to perform the relative computation. Please note that the actual evaluation strategies are explained in detail in sections \ref{sec:algebraic} and \ref{sec:computational}. All the code will be publicly available at \cite{denis}
+In the following sections, we will give a brief overview of each phase by commenting the key pieces of code needed to perform the relative computation. Please note that the actual evaluation strategies are explained in detail in sections \ref{sec:algebraic} and \ref{sec:computational}. All the code will be publicly available at \cite{denis}. Note that both evaluators that follow the algebraic approach have been implemented both with \textit{eager} and \textit{lazy} semantics, but, for the sake of briefness, in this report we will only cover \textit{eager} evaluation. In practice, their lazy counterparts do not evaluate a term before substituting it in an abstraction.
 
 \subsection{Lexing $\lambda$-expressions} \label{sec:lexing}
 
@@ -172,7 +187,7 @@ Note that:
     \item The lexemes are ordered according to descending priority: even though the newline character will be recognized by both the first and the last expression, only the first one will be applied to produce a \lstinline|NewLine| token.
 \end{enumerate}
 
-By compiling the file through Alex, we obtain a custom Haskell module that can be called from other modules to read any text stream and recognize its lexemes. The following parser module will exploit such functionality to convert the input file into a stream of tokens that can be then converted into an abstract syntax tree.
+By compiling the file through Alex (\lstinline|alex scanner.x|), we obtain a custom Haskell module that can be called from other modules to read any text stream and recognize its lexemes. The following parser module will exploit such functionality to convert the input file into a stream of tokens that can be then converted into an abstract syntax tree.
 
 \subsection{Parsing $\lambda$-expressions}
 
@@ -186,8 +201,7 @@ Following a very similar computational pipeline to compilers' frontends, the lex
 The objective of our parser will be to recognize the syntactic structure of each $\lambda$-expression and to feed it as a reasonable data structure to the evaluator. A trivial data type suitable for the task can be defined as follows:
 
 \begin{lstlisting}
-data Term =
-    Var String
+data Term = Var String
     | Abs String Term
     | App Term Term
     | Empty
@@ -239,7 +253,7 @@ Before proceeding with the description of the evaluation strategies, it is worth
     \item Contrary to the construction defined in Section \ref{sec:lambdaintro}, our specification allows the user to omit some brackets. This language expansion is a source of ambiguity, but we can tackle it by defining the abstraction and application as left-associative operations through the \lstinline|%left 'λ' '.' VAR| directive. In the end, we are still left with a few shift/reduce conflicts, but thankfully the defaulting rules of Happy produce a parser with the desired behaviour without additional work.
 \end{enumerate}
 
-The generated parser will be the actual program compiled/interpreted, thus we need to define the main function of the software:
+The generated parser (through the command \lstinline|happy parser.y|) will be the actual program compiled/interpreted, thus we need to define the main function of the software:
 
 \begin{lstlisting}
 main :: IO ()
@@ -284,7 +298,8 @@ sub x v@(Var y) newVal
 sub x a@(Abs y t) newVal
     | x == y = a
     | notElem y (freeVars newVal) = Abs y (sub x t newVal)
-    | otherwise = let y' = firstNameAvailable (freeVars newVal) in Abs y' (sub x (alphaConv y t y') newVal)
+    | otherwise = let y' = firstNameAvailable (freeVars newVal) in
+        Abs y' (sub x (alphaConv y t y') newVal)
 sub x (App t1 t2) t = App (sub x t1 t) (sub x t2 t)
 sub _ Empty _ = error "Empty detected"
 \end{lstlisting}
@@ -340,10 +355,10 @@ We still need to find a new, suitable, name. This task is executed by the functi
 
 \begin{lstlisting}
 firstNameAvailable :: [String] -> String
-firstNameAvailable = firstNameAvailableRec 0 where
-    firstNameAvailableRec :: Int -> [String] -> String
-    firstNameAvailableRec n usedVars
-        | elem (variableSet !! n) usedVars = firstNameAvailableRec (n+1) usedVars
+firstNameAvailable = fnaRec 0 where
+    fnaRec :: Int -> [String] -> String
+    fnaRec n usedVars
+        | elem (variableSet !! n) usedVars = fnaRec (n+1) usedVars
         | otherwise = variableSet !! n
 \end{lstlisting}
 
@@ -393,7 +408,8 @@ toDeBruijn = toDeBruijnRec [] where
         Just n -> DBVar (n+1)
         Nothing -> DBConst x
     toDeBruijnRec vars (Abs x t) = DBAbs (toDeBruijnRec (x:vars) t)
-    toDeBruijnRec vars (App t1 t2) = DBApp (toDeBruijnRec vars t1) (toDeBruijnRec vars t2)
+    toDeBruijnRec vars (App t1 t2) = DBApp (toDeBruijnRec vars t1)
+        (toDeBruijnRec vars t2)
     toDeBruijnRec _ Empty = error "Empty detected"
 \end{lstlisting}
 
@@ -447,10 +463,11 @@ eval = evalRec [] [] where
     evalRec env vars (Var x) = case elemIndex x vars of
         Just n -> env !! n
         Nothing -> CompVar x
-    evalRec env vars (App t1 t2) = let t2' = evalRec env vars t2 in case evalRec env vars t1 of
-        CompAbs f -> f t2'
-        v@(CompVar _) -> CompApp v t2'
-        a@(CompApp _ _) -> CompApp a t2'
+    evalRec env vars (App t1 t2) = let t2' = evalRec env vars t2 in
+        case evalRec env vars t1 of
+            CompAbs f -> f t2'
+            v@(CompVar _) -> CompApp v t2'
+            a@(CompApp _ _) -> CompApp a t2'
     evalRec _ _ Empty = error "Empty detected"
 \end{lstlisting}
 
@@ -481,7 +498,9 @@ toSyntax = toSyntaxRec 0 where
     toSyntaxRec _ (CompVar x) = case readMaybeInt x of
         Just n -> (Var (show n), [])
         Nothing -> (Var x, [x])
-    toSyntaxRec n (CompAbs f) = let (term, freeVars) = toSyntaxRec (n+1) (f (CompVar (show n))) in (Abs (show n) term, freeVars)
+    toSyntaxRec n (CompAbs f) =
+        let (term, freeVars) = toSyntaxRec (n+1) (f (CompVar (show n))) in
+            (Abs (show n) term, freeVars)
     toSyntaxRec n (CompApp t1 t2) = let
                 (t1', freeVars1) = toSyntaxRec n t1
                 (t2', freeVars2) = toSyntaxRec n t2
@@ -512,7 +531,7 @@ substInts (term, freeVars) = substIntsRec [] term freeVars where
     substIntsRec _ Empty _ = error "Empty detected"
 \end{lstlisting}
 
-We substitute the bound variables and the bindings while being careful to avoid choosing the free variables (note the use of the previously defined function \lstinline|firstNameAvailable|).
+We substitute the bound variables and the bindings while being careful to avoid choosing the free variables (note the use of the previously defined \lstinline|firstNameAvailable|).
 
 \section{Conclusions}\label{sec:conclusions}
 
