@@ -149,10 +149,11 @@ where:
 If you use this work in your research, please cite it as follows:
 
 ```
-@software{D_Ambrosi_Turing_Completeness_of_2023,
+@software{D_Ambrosi_Evaluating_Untyped_Lambda_2023,
     author = {D'Ambrosi, Denis},
     month = sep,
-    title = {{Evaluating Untyped Lambda-Expressions in Haskell}},
+    title = {{Evaluating Untyped Lambda Expressions in Haskell}},
+    url = {https://github.com/dambrosidenis/Lambda_Expression_Evaluation},
     version = {1.0.0},
     year = {2023}
 }
