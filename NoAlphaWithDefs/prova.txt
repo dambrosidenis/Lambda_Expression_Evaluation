@@ -1,5 +1,0 @@
-(λ x . λ z . z) (λ x . y)
-let idFunc = (λ x . λ z . z) (λ x . y)
-idFunc x
-let variableX = (λ y . y) x
-(((λxyz.xyz)(λx.x x))(λx.x))x
